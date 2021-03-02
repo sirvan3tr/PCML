@@ -1,0 +1,178 @@
+<!DOCTYPE html> 
+<html> 
+	<head>
+	<meta charset="utf-8" />
+	<title>PCML Example--Experimental</title>
+	<style>
+		#pythoncode {
+			border: 1px solid #ccc;
+			padding: 10px;
+			margin: 20px;
+			background: #eee;
+			font-family: monospace;
+		}
+		#pythoncode,
+		#editor { 
+			width: 400px;
+    	height: 400px;
+    	border: 1px solid #ccc;
+    }
+		.red-box {
+			background: red;
+			width: 50px;
+			height: 20px;
+		}
+	</style>
+	</head>
+  	<body onload="brython()">
+        <h2>PCML Example</h2>
+        <h6>Experimental version</h6>
+	<button id="convert">Convert</button>
+	<table>
+	<tr>
+	<td>
+	<div id="editor">:div
+:main.vmainClass1.vmainClass2
+  :div#main-container
+    :div#keyboard-shortcut.class2
+    :div "I am div content"
+    :div "Another content"
+  :div.form-container
+    :form method=post
+  :v-icon
+    :v-con</div>
+		
+		</td>
+		<td id="pythoncode"></td>
+		<td id="htmlcode"></td>
+		<td>
+		</tr>
+		</table>
+Copyrights (c) 2021 Sirvan Almasi	
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.min.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.session.setMode("ace/mode/javascript");
+</script>
+<script src="https://cdn.jsdelivr.net/npm/brython@3.9.0/brython.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/brython@3.9.0/brython_stdlib.js"></script>
+<script type="text/python">
+import re
+from browser import document, console
+from browser.widgets.dialog import InfoDialog
+
+def get_class_id(element, type):
+  """Returns class or id attribute in proper HTML form"""
+  attr = 'class' if type == '\.' else 'id'
+  matches = re.search(f"({type}+\w+\S+)", element)
+  if matches is not None:
+    split_del = '.' if type =='\.' else type
+    attrs = matches.group(0).split(split_del)
+    new_element = element.replace(matches.group(0), '')
+    return f"{attr}=\"{' '.join(attrs[1:])}\"", new_element
+  return None, element
+
+def get_attributes(element):
+  """
+    Get the attributes of the elements.
+    1. Get classes
+    2. Get id
+    3. Other attrs
+  """
+  combined_attrs = ''
+  classes, new_el = get_class_id(element, '\.')
+  id, _ = get_class_id(new_el, '#')
+  if classes is not None:
+    combined_attrs += classes
+  
+  if id is not None:
+    combined_attrs += id
+
+  return combined_attrs
+
+def split_tag(tag):
+  """Split a tag to get the name of the actual tag"""
+  try:
+    split_tag = lambda tag, point : tag.split(point)
+    point_list = ['#', '.', ' ', '\n', '\t']
+    finder = [9999,'']
+    for index, p in enumerate(point_list):
+      pos = tag.find(p)
+      if pos < finder[0] and pos > 0:
+        finder[0] = pos
+        finder[1] = p
+    return tag.split(finder[1], 1)[0]
+  except:
+    return tag
+
+def get_content(element):
+    """
+    Get the main content of the element.
+    The text should be between quotation marks.
+    e.g. 
+        :div "I am a content"
+        <div>I am a content</div>
+    """
+    matches = re.search('"(.*?)"', element)
+    if matches is not None:
+        return matches.group(0).replace('"','')
+    return ""
+
+def get_childs(x, i, t, end=""):
+  """Recursive function that gets the child elements from a starting position"""
+  if i >= len(x):
+    return ""
+  tabs_count = x[i].count('\t')
+  xi = x[i]
+  attrs = ' ' + get_attributes(xi)
+  xi = split_tag(x[i])
+  content = get_content(x[i])
+  if tabs_count > t or i > len(x):
+    h = get_childs(x, i+1, tabs_count, f"</{xi}>")
+    return f"<{xi}{attrs}>{content}{h}{end}"
+  elif tabs_count == t:
+    h = get_childs(x, i+1, tabs_count, end)
+    return f"<{xi}{attrs}>{content}</{xi}>{h}"
+  elif tabs_count < t:
+    h = get_childs(x, i+1, tabs_count) if i+1 <= len(x) else ""
+    return f"<{xi}{attrs}>{content}</{xi}>{end}{h}"
+  else:
+    return ""
+
+def init_string(string):
+  string = string.replace('  ', '\t')
+  string = string.split(':')
+  return string
+
+def get_pretty_html(string):
+  pcml = get_childs(init_string(string), 1, 0)
+  return pcml
+
+test_string = '''
+:div
+:main.vmainClass1.vmainClass2
+  :div#main-container
+    :div#keyboard-shortcut.class2
+    :div "I am div content"
+    :div "Another content"
+  :div.form-container
+    :form method=post
+  :v-icon
+    :v-con'''
+
+#document['pythoncode'] <= get_pretty_html(test_string)
+
+def convert_pcml(ev):
+	mystring = document.select('.ace_content')[0].text
+	console.log(mystring)
+	#document['pythoncode'] <= mystring
+	converted_pcml = get_pretty_html(mystring)
+	document['pythoncode'].text = converted_pcml
+	document['htmlcode'].html = converted_pcml
+	console.log(converted_pcml)
+
+document["convert"].bind("click", convert_pcml)
+</script>
+ </body>
+</html>
