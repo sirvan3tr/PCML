@@ -2,6 +2,7 @@
 Pythonic mark up language that converts to HTML. Inspired by Clojure and hiccup.
 
 **Note: this is still in development**
+![alt text](web/web-demo.gif "web demo")
 
 Hiccup inspired mark up language. Wite your HTML like so:
 ```
