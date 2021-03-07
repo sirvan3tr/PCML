@@ -1,0 +1,126 @@
+from bs4 import BeautifulSoup
+import re
+
+def split_tag(tag):
+  """Split a tag to get the name of the actual tag"""
+  try:
+    split_tag = lambda tag, point : tag.split(point)
+    point_list = ['#', '.', ' ', '\n', '\t']
+    finder = [9999,'']
+    for index, p in enumerate(point_list):
+      pos = tag.find(p)
+      if pos < finder[0] and pos > 0:
+        finder[0] = pos
+        finder[1] = p
+    return tag.split(finder[1], 1)[0]
+  except:
+    return tag
+
+def get_class_id(element, type):
+  """Returns class or id attribute in proper HTML form"""
+  attr = 'class' if type == '\.' else 'id'
+  matches = re.search(f"({type}+\w+\S+)", element)
+  if matches is not None:
+    split_del = '.' if type =='\.' else type
+    attrs = matches.group(0).split(split_del)
+    new_element = element.replace(matches.group(0), '')
+    return f"{attr}=\"{' '.join(attrs[1:])}\"", new_element
+  return None, element
+
+def get_attributes(element):
+  """
+    Get the attributes of the elements.
+    1. Get classes
+    2. Get id
+    3. Other attrs
+  """
+  combined_attrs = ''
+  classes, new_el = get_class_id(element, '\.')
+  id, _ = get_class_id(new_el, '#')
+  if classes is not None:
+    combined_attrs += classes
+
+  if id is not None:
+    combined_attrs += id
+
+  return combined_attrs
+
+def get_content(element):
+    """
+    Get the main content of the element.
+    The text should be between quotation marks.
+    e.g.
+        :div "I am a content"
+        <div>I am a content</div>
+    """
+    matches = re.search('"(.*?)"', element)
+    if matches is not None:
+        return matches.group(0).replace('"','')
+    return ""
+
+def get_childs(x, i, t, end=""):
+  """Recursive function that gets the child elements from a starting position"""
+  if i >= len(x):
+    return ""
+  tabs_count = x[i].count('\t')
+  xi = x[i]
+  attrs = ' ' + get_attributes(xi)
+  xi = split_tag(x[i])
+  content = get_content(x[i])
+  if tabs_count > t or i > len(x):
+    h = get_childs(x, i+1, tabs_count, f"</{xi}>")
+    return f"<{xi}{attrs}>{content}{h}{end}"
+  elif tabs_count == t:
+    h = get_childs(x, i+1, tabs_count, end)
+    return f"<{xi}{attrs}>{content}</{xi}>{h}"
+  elif tabs_count < t:
+    h = get_childs(x, i+1, tabs_count) if i+1 <= len(x) else ""
+    return f"<{xi}{attrs}>{content}</{xi}>{end}{h}"
+  else:
+    return ""
+
+def init_string(string, tab_spaces):
+  """Determine the amount of spaces the tab is using, replace with tab
+  character and then split by colon"""
+  spaces = ''.join([' ' for i in range(tab_spaces)])
+  #return string.replace(spaces, '\t').split(':')
+
+  string = string.replace(spaces, '\t')
+  print(string, '\n')
+
+  print(string.split('\t'))
+  new_split = tab_split(string)
+  string = string.split(':')
+  print(string, '\n')
+  return new_split
+
+def tab_split(string):
+  new_split = []
+  prev_index = 0
+  rep = lambda s : s.replace(':', '')
+  for i, char in enumerate(string):
+    if char is '\t' and string[i+1] is not '\t':
+      print(string[prev_index:i])
+      new_split.append(rep(string[prev_index:i]))
+      prev_index = i+1
+  new_split.append(rep(string[prev_index:len(string)]))
+  print(new_split)
+  return new_split
+
+def get_pretty_html(string):
+  pcml = get_childs(init_string(string, 2), 1, 0)
+  return BeautifulSoup(pcml, 'html.parser').prettify()
+
+if __name__ == "__main__":
+    test_string = ''':div
+    :main.vmainClass1.vmainClass2
+      :div#main-container
+        :div#keyboard-shortcut.class2
+        :div "I am div content"
+        :div "Another content"
+      :div.form-container
+        :form method=post
+      :v-icon
+        :v-con'''
+
+    print(get_pretty_html(test_string))
