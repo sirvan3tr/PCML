@@ -84,15 +84,8 @@ def init_string(string, tab_spaces):
   character and then split by colon"""
   spaces = ''.join([' ' for i in range(tab_spaces)])
   #return string.replace(spaces, '\t').split(':')
-
   string = string.replace(spaces, '\t')
-  print(string, '\n')
-
-  print(string.split('\t'))
-  new_split = tab_split(string)
-  string = string.split(':')
-  print(string, '\n')
-  return new_split
+  return tab_split(string)
 
 def tab_split(string):
   new_split = []
@@ -108,7 +101,7 @@ def tab_split(string):
   return new_split
 
 def get_pretty_html(string):
-  pcml = get_childs(init_string(string, 2), 1, 0)
+  pcml = get_childs(init_string(string, 2), 0, 0)
   return BeautifulSoup(pcml, 'html.parser').prettify()
 
 if __name__ == "__main__":
