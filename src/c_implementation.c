@@ -13,6 +13,11 @@ struct nodeType {
     char *classes;
 };
 
+void printTree(Node *head, char *string);
+void printNode(Node *node, char *string);
+void printTag(int from, int to, int closingTag, char *string);
+
+
 void createNode(Node *parentNode, Node *currentNode, int level, int tabCount) {
     if(tabCount > level) {
         // It is my child
@@ -21,10 +26,61 @@ void createNode(Node *parentNode, Node *currentNode, int level, int tabCount) {
     }
 }
 
-void printTree(Node *head) {
+
+void printTree(Node *head, char *string) {
+
+    printf("\nAddress at head %p\n", head);
+
     if(head->childNode != NULL) {
-        return
+        printNode(head->childNode, string);
     }
+
+    if(head->nextSibling != NULL) {
+        printNode(head->nextSibling, string);
+    }
+
+}
+
+
+void printNode(Node *node, char *string) {
+    if(node != NULL) {
+        int i = node->startPos;
+        int j = node->endPos;
+        printTag(i, j, 0, string);
+        if(node->childNode == NULL) {
+            printTag(i, j, 1, string);
+            printTree(node, string);
+        }else{
+            printTree(node, string);
+            printTag(i, j, 1, string);
+        }
+    }
+}
+
+void printTag(int from, int to, int closingTag, char *string) {
+    char tab[] = {'\t', '\n'};
+    if(closingTag==1) {
+        printf("</");
+    }else{
+        printf("<");
+    }
+    for(from; from <= to; from++) {
+        if(strchr(tab, string[from]) == NULL) {
+            printf("%c", string[from]);
+        }
+    }
+    printf(">");
+}
+
+
+void freeMemory(Node *head) {
+    if(head->childNode != NULL)
+        freeMemory(&(head->childNode));
+
+    if(head->nextSibling != NULL)
+        freeMemory(&(head->nextSibling));
+
+    //free(head);
 }
 
 int main() {
@@ -32,14 +88,6 @@ int main() {
 
     char *test_string = "div1\n\tdiv2\n\tdiv3\n\tdiv4\n\t\tdiv5\ndiv6";
     char tab[] = {'\t'};
-    printf("My test string is: %s\n", test_string);
-    printf("Address of the pint: %p\n", test_string);
-
-    Node *divNode = (Node*) malloc(sizeof(Node));
-    strcpy(divNode->id, "div");
-    printf("My div is called: %s\n", divNode->id);
-    printf("-------------------------------------\n");
-
 
     Node *HEAD = (Node*) malloc(sizeof(Node));
     HEAD->parentNode = NULL;
@@ -88,6 +136,10 @@ int main() {
                     }
 
                 }
+
+                    printf("\nPrev position: %i\n", prevPos);
+                    printf("%i\n", currentNode->endPos);
+                    printf("Current position %i\n", i);
                 //createNode(currentNode, currentNode, currentLevel, tabCount);
 
                 /*
@@ -112,9 +164,10 @@ int main() {
     }
 
     //Node = getChildren(test_string, 0, 0, HEAD, 0);
-
-    free(divNode);
-    free(HEAD);
+    printf("Address at head %p\n", HEAD);
+    printTree(HEAD, test_string);
+    //freeMemory(&HEAD);
+    printf("\nhell %i", HEAD->childNode->endPos);
     return 0;
 }
 
