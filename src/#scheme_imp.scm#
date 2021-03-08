@@ -14,7 +14,7 @@
     (if (get-split string count max)
         ((print (substring string pos count))
          (loop string (add1 count) max count))
-        (loop string (add1 count) max pos)
+        loop string (add1 count) max pos)
     )
     ;(print count (string-ref string count) (tab? (string-ref string count)))
     )))
